@@ -25,9 +25,16 @@ class LandsatImageData:
         new_data = []
         for i in range(float_tuple.__len__()):
             if i % iteration == 0:
-                new_data.append(float_tuple[i])
+                if float_tuple[i] != 0: #OPTIMIZE--- Start from middle and go until n number of no data pixles show up
+                    new_data.append(float_tuple[i])
         return new_data
+    
+    def create_dataset(self):
+      compiled_data = [] #too many arrays -- reduce 
+      for i in range(self.band.YSize):
+        compiled_data.append(self.thin_data(self.upack_data(0, 0, self.band.XSize, i), 10))
 
 
 blue_band = LandsatImageData("landsat_tif\B2.TIF")
 print blue_band.thin_data(blue_band.upack_data(0, 3000, blue_band.band.XSize, 1), 1)
+#16-bit =  0-65535
