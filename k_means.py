@@ -1,9 +1,11 @@
 import math
 import os
 from dataGrabber import LandsatImageData
+import random
 
 normalized_data = [None, None, None, None, None, None, None, None, None, None, None]
 data_points = []
+centroids = []  # centroid label is index and a centroid is defined by a list of floats
 
 
 class Point:
@@ -39,16 +41,21 @@ def import_data(iterations):
 
 def make_points():
     for i in range(10):  # find a way to get length of a band
-        data_points.append(Point(normalized_data[0][i], normalized_data[1][i], normalized_data[2][i],  # list has None types in it so [i] cant be used
-                                 normalized_data[3][i], normalized_data[4][i], normalized_data[5][i],
-                                 normalized_data[6][i], normalized_data[7][i], normalized_data[8][i],
-                                 normalized_data[9][i], normalized_data[10][i]))
+        temp_point = Point()
+        for j in range(normalized_data.__len__()):
+            temp_point.bands[j] = normalized_data[i]
+        data_points.append(temp_point)
 
 def get_distance(pos_1, pos_2):
     sum = 0
     for i in range(pos_1):
         sum += math.pow(pos_1[i] - pos_2[i], 2)
     return math.sqrt(sum)
+  
+def make_centroids():
+    for i in range(normalized_data.__len__()):
+        
+    # randomly place centroids based on points
 
 
 import_data(100)
