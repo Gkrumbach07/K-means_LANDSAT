@@ -6,6 +6,8 @@ import random
 normalized_data = [None, None, None, None, None, None, None, None, None, None, None]
 data_points = []
 centroids = []  # centroid label is index and a centroid is defined by a list of floats
+data_min = 0
+data_max = 1000
 
 
 class Point:
@@ -28,7 +30,7 @@ class Point:
         self.bands = [b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11]
 
 
-def import_data(iterations):
+def import_data(iterations):  # make min and max the same
     for filename in os.listdir("landsat_tif"):
         if filename.endswith(".TIF"):
             for i in range(11):
@@ -52,9 +54,12 @@ def get_distance(pos_1, pos_2):
         sum += math.pow(pos_1[i] - pos_2[i], 2)
     return math.sqrt(sum)
   
-def make_centroids():
-    for i in range(normalized_data.__len__()):
-        
+def make_centroids(num):
+    for i in range(num):
+        temp_centroid = []
+        for j in range(normalized_data.__len__()):
+            normalized_data[i] != None:
+                temp_centroid.append(randint(data_min, data_max))
     # randomly place centroids based on points
 
 
