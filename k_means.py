@@ -3,6 +3,10 @@ import os
 from dataGrabber import LandsatImageData
 import random
 import matplotlib.pyplot as plt
+import gdal
+from gdalconst import *
+import osr
+import numpy
 
 
 class Point:
@@ -30,6 +34,8 @@ class Kmeans:
         self.normalized_data = []
         self.data_points = []
         self.centroids = []
+        self.x_size = None
+        self.y_size = None
 
     def main(self, points_num, centroids_num, max_dist, stop=-1, plot=False, x_axis=0, y_axis=1):
         if plot:
@@ -119,7 +125,10 @@ class Kmeans:
     def import_data(self, sample):  # make min and max the same
         for filename in os.listdir("landsat_tif"):
             if filename.endswith(".TIF"):
-                self.normalized_data.append(LandsatImageData('landsat_tif\\' + filename, sample).compiled_data)
+                temp = LandsatImageData('landsat_tif\\' + filename, sample)
+                self.normalized_data.append(temp.compiled_data)
+                self.x_size = temp.band.XSize
+                self.y_size = temp.band.YSize
 
     def make_debug_data(self, num, distribute=1):
         if distribute == 1:
@@ -166,7 +175,45 @@ class Kmeans:
         axes.set_xlim([0, 1])
         axes.set_ylim([0, 1])
 
+
+def import_data(line):  # make min and max the same
+    temp = []
+    for filename in os.listdir("landsat_tif"):
+        if filename.endswith(".TIF"):
+            temp.append(LandsatImageData('landsat_tif\\' + filename, 0, line).compiled_data)
+    return temp
+
+
+def get_point_labels(pos):
+    short_dist = 2
+    label = None
+    for i in alg.centroids:
+        temp_dist = alg.get_distance(pos, i.pos)
+        if temp_dist < short_dist:
+            label = i.label
+            short_dist = temp_dist
+    return label
+
+
+def make_point(index):
+    point = []
+    for i in data:
+        point.append(i[index])
+    return point
+
 alg = Kmeans()
-#alg.make_debug_data(1000, 2)
 alg.import_data(100)
-alg.main(100, 2, .005, plot=True, x_axis=1, y_axis=2)
+alg.main(100, 2, .005)
+
+format = "GTiff"
+driver = gdal.GetDriverByName(format)
+dst_ds = driver.Create('exportedRaster.TIF', alg.x_size, alg.y_size, 1, gdal.GDT_Byte)
+raster = numpy.zeros((alg.y_size, alg.x_size), dtype=numpy.uint8)
+
+for y in range(alg.y_size - 1):
+    if y % 100 == 0:
+        print str(y) + "/" + str(alg.y_size)
+    data = import_data(y)
+    for x in range(len(data[0]) - 1):
+        raster[y][x] = get_point_labels(make_point(x))
+dst_ds.GetRasterBand(1).WriteArray(raster)
