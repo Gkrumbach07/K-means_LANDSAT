@@ -124,7 +124,7 @@ class Kmeans:
 
     def import_data(self, sample):  # make min and max the same
         for filename in os.listdir("landsat_tif"):
-            if filename.endswith(".TIF"):
+            if filename.endswith(".tif"):
                 temp = LandsatImageData('landsat_tif\\' + filename, sample)
                 self.normalized_data.append(temp.compiled_data)
                 self.x_size = temp.band.XSize
@@ -179,7 +179,7 @@ class Kmeans:
 def import_data(line):  # make min and max the same
     temp = []
     for filename in os.listdir("landsat_tif"):
-        if filename.endswith(".TIF"):
+        if filename.endswith(".tif"):
             temp.append(LandsatImageData('landsat_tif\\' + filename, 0, line).compiled_data)
     return temp
 
@@ -203,7 +203,7 @@ def make_point(index):
 
 alg = Kmeans()
 alg.import_data(100)
-alg.main(1000, 4, .005)
+alg.main(300, 10, .005)
 
 
 format = "GTiff"
