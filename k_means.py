@@ -52,11 +52,9 @@ def get_distance(pos_1, pos_2):
 def make_centroids(num):
     for i in range(num):
         temp_centroid = Centroid()
-        for j in range(normalized_data.__len__()):
-            temp_centroid.pos.append(random.uniform(0.0, 1.0))
-            temp_centroid.label = i
+        temp_centroid.pos = data_points[random.randint(0, len(data_points) - 1)].pos
+        temp_centroid.label = i
         centroids.append(temp_centroid)
-    # randomly place centroids based on points
 
 
 def update_point_labels():
@@ -72,19 +70,21 @@ def update_point_labels():
 
 
 def update_centroid_pos():
-    for i in centroids:
+    for i in range(centroids.__len__()):
         temp_pos = []
         for d in range(centroids[0].pos.__len__()):  # for each dimension in centroid pos
             temp_sum = 0
             num_points = 0
             for j in data_points:
-                if j.label == i.label:
+                if j.label == centroids[i].label:
                     num_points += 1
                     temp_sum += j.pos[d]
             if num_points != 0:
                 temp_pos.append(temp_sum/num_points)
-        i.old_pos = i.pos
-        i.pos = temp_pos
+
+        centroids[i].old_pos = centroids[i].pos
+        if num_points != 0:
+            centroids[i].pos = temp_pos
 
 
 def change_threshold(threshold):
@@ -92,6 +92,13 @@ def change_threshold(threshold):
         if get_distance(i.pos, i.old_pos) > threshold:
             return False
     return True
+
+
+def get_max_dist():
+    dist = []
+    for i in centroids:
+        dist.append(get_distance(i.pos, i.old_pos))
+    return str(max(dist))
 
 
 def k_means(points_num, centroids_num, max_dist, stop=-1, plot=False, x_axis=0, y_axis=1):
@@ -118,42 +125,47 @@ def k_means(points_num, centroids_num, max_dist, stop=-1, plot=False, x_axis=0, 
         plt.show()
 
 
-def make_debug_data(num):
-    temp = []
-    for i in range(num):
-        temp.append(random.uniform(0.0, 0.4))
-    for i in range(num):
-        temp.append(random.uniform(0.6, 1.0))
-    normalized_data.append(temp)
+def make_debug_data(num, distribute=1):
+    if distribute == 1:
+        temp = []
+        for i in range(num/2):
+            temp.append(random.uniform(0.0, 0.4))
+        for i in range(num/2):
+            temp.append(random.uniform(0.6, 1.0))
+        normalized_data.append(temp)
 
-    temp1 = []
-    for i in range(num):
-        temp1.append(random.uniform(0.0, 0.4))
-    for i in range(num):
-        temp1.append(random.uniform(0.6, 1.0))
-    normalized_data.append(temp1)
+        temp1 = []
+        for i in range(num/2):
+            temp1.append(random.uniform(0.0, 0.4))
+        for i in range(num/2):
+            temp1.append(random.uniform(0.6, 1.0))
+        normalized_data.append(temp1)
 
-    c1 = Centroid()
-    c1.label = 0
-    c1.pos = [0, 0]
+    elif distribute == 2:
+        temp = []
+        for i in range(num):
+            temp.append(random.uniform(0.0, 1.0))
+        normalized_data.append(temp)
 
-    c2 = Centroid()
-    c2.label = 1
-    c2.pos = [1.0, 1.0]
-
-    centroids.append(c1)
-    centroids.append(c2)
+        temp = []
+        for i in range(num):
+            temp.append(random.uniform(0.0, 1.0))
+        normalized_data.append(temp)
 
 
 def plot_data(plot_num, figure, x_axis, y_axis):
-    sub = figure.add_subplot(4, 4, plot_num + 1, title="Iteration " + str(plot_num))
+    print "Iteration " + str(plot_num) + "- Max Distance: " + get_max_dist()
+    sub = figure.add_subplot(5, 5, plot_num + 1, title="Iteration " + str(plot_num))
 
     if plot_num != 0:
         col = ('r', 'g', 'y', 'c', 'm', 'k', 'w', '#ce6f3b')
         for i in data_points:
             sub.scatter(i.pos[x_axis], i.pos[y_axis], color=col[i.label], alpha=0.3, marker='.')
-    for i in centroids:
-        sub.scatter(i.pos[x_axis], i.pos[y_axis], color='b', marker='.', s=50)
+
+    for c in centroids:
+        x = c.pos[x_axis]
+        y = c.pos[y_axis]
+        sub.scatter(x, y, color='b', marker='.', s=50)
 
     axes = plt.gca()
     axes.set_xlim([0, 1])
@@ -163,5 +175,6 @@ normalized_data = []
 data_points = []
 centroids = []
 
-import_data(100)
-k_means(500, 2, 0, plot=True, x_axis=1, y_axis=0)
+make_debug_data(1000, 2)
+#import_data(100)
+k_means(1000, 5, .005, plot=False, x_axis=0, y_axis=1)
