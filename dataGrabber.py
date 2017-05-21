@@ -4,14 +4,14 @@ from gdalconst import *
 
 
 class LandsatImageData:
-    data_min = None
-    data_max = None
-    band = None
-    iteration = 100
-    compiled_data = []
-    data_set = None
-
     def __init__(self, data_file_path, iterate):
+        self. compiled_data = []
+        self.data_min = None
+        self.data_max = None
+        self.band = None
+        self.iteration = 100
+        self.data_set = None
+
         self.data_set = gdal.Open(data_file_path, GA_ReadOnly)
         self.band = self.data_set.GetRasterBand(1)
         self.band.DeleteNoDataValue()
