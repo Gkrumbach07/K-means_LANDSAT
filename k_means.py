@@ -90,7 +90,7 @@ class Kmeans:
 
     def update_point_labels(self):
         for i in range(self.data_points.__len__()):
-            short_dist = 2
+            short_dist = 100000
             label = None
             for j in range(self.centroids.__len__()):
                 temp_dist = self.get_distance(self.data_points[i].pos, self.centroids[j].pos)
@@ -120,7 +120,7 @@ class Kmeans:
             temp_point = Point()
             for j in range(self.normalized_data.__len__()):
                 temp_point.pos.append(self.normalized_data[j][i])
-                self.data_points.append(temp_point)
+            self.data_points.append(temp_point)
 
     def import_data(self, sample):  # make min and max the same
         for filename in os.listdir("landsat_tif"):
@@ -185,7 +185,7 @@ def import_data(line):  # make min and max the same
 
 
 def get_point_labels(pos):
-    short_dist = 2
+    short_dist = 100000
     label = None
     for i in alg.centroids:
         temp_dist = alg.get_distance(pos, i.pos)
@@ -203,12 +203,16 @@ def make_point(index):
 
 alg = Kmeans()
 alg.import_data(100)
-alg.main(100, 2, .005)
+alg.main(1000, 4, .005)
+
 
 format = "GTiff"
 driver = gdal.GetDriverByName(format)
-dst_ds = driver.Create('exportedRaster.TIF', alg.x_size, alg.y_size, 1, gdal.GDT_Byte)
+# dst_ds = driver.Create('exportedRaster.TIF', alg.x_size, alg.y_size, 1, gdal.GDT_Byte)
 raster = numpy.zeros((alg.y_size, alg.x_size), dtype=numpy.uint8)
+src_ds = gdal.Open('landsat_tif/B2.TIF')
+dst_ds = driver.CreateCopy('exportedRaster3.TIF', src_ds, 0)
+
 
 for y in range(alg.y_size - 1):
     if y % 100 == 0:
@@ -217,3 +221,5 @@ for y in range(alg.y_size - 1):
     for x in range(len(data[0]) - 1):
         raster[y][x] = get_point_labels(make_point(x))
 dst_ds.GetRasterBand(1).WriteArray(raster)
+dst_ds = None
+src_ds = None
