@@ -176,50 +176,57 @@ class Kmeans:
         axes.set_ylim([0, 1])
 
 
-def import_data(line):  # make min and max the same
-    temp = []
-    for filename in os.listdir("landsat_tif"):
-        if filename.endswith(".tif"):
-            temp.append(LandsatImageData('landsat_tif\\' + filename, 0, line).compiled_data)
-    return temp
+class Classifier:
+        
+    def import_data(self, line):  # make min and max the same
+        temp = []
+        for filename in os.listdir("landsat_tif"):
+            if filename.endswith(".tif"):
+                temp.append(LandsatImageData('landsat_tif\\' + filename, 0, line).compiled_data)
+        return temp
 
 
-def get_point_labels(pos):
-    short_dist = 100000
-    label = None
-    for i in alg.centroids:
-        temp_dist = alg.get_distance(pos, i.pos)
-        if temp_dist < short_dist:
-            label = i.label
-            short_dist = temp_dist
-    return label
+    def get_point_labels(self, pos):
+        short_dist = 100000
+        label = None
+        for i in alg.centroids:
+            temp_dist = alg.get_distance(pos, i.pos)
+            if temp_dist < short_dist:
+                label = i.label
+                short_dist = temp_dist
+        return label
 
 
-def make_point(index):
-    point = []
-    for i in data:
-        point.append(i[index])
-    return point
-
-alg = Kmeans()
-alg.import_data(100)
-alg.main(300, 10, .005)
-
-
-format = "GTiff"
-driver = gdal.GetDriverByName(format)
-# dst_ds = driver.Create('exportedRaster.TIF', alg.x_size, alg.y_size, 1, gdal.GDT_Byte)
-raster = numpy.zeros((alg.y_size, alg.x_size), dtype=numpy.uint8)
-src_ds = gdal.Open('landsat_tif/B2.TIF')
-dst_ds = driver.CreateCopy('exportedRaster3.TIF', src_ds, 0)
+    def make_point(self, index):
+        point = []
+        for i in data:
+            point.append(i[index])
+        return point
+    
+    def export_tif(self):
+        format = "GTiff"
+        driver = gdal.GetDriverByName(format)
+        raster = numpy.zeros((alg.y_size, alg.x_size), dtype=numpy.uint8)
+        src_ds = gdal.Open('landsat_tif/B2.TIF')
+        dst_ds = driver.CreateCopy('exportedRaster3.TIF', src_ds, 0)
 
 
-for y in range(alg.y_size - 1):
-    if y % 100 == 0:
-        print str(y) + "/" + str(alg.y_size)
-    data = import_data(y)
-    for x in range(len(data[0]) - 1):
-        raster[y][x] = get_point_labels(make_point(x))
-dst_ds.GetRasterBand(1).WriteArray(raster)
-dst_ds = None
-src_ds = None
+        for y in range(alg.y_size - 1):
+            if y % 100 == 0:
+                print str(y) + "/" + str(alg.y_size)
+            data = import_data(y)
+            for x in range(len(data[0]) - 1):
+                raster[y][x] = get_point_labels(make_point(x))
+        dst_ds.GetRasterBand(1).WriteArray(raster)
+        dst_ds = None
+        src_ds = None
+        
+    def main(self, iterations, clusters, max_dist, points=-1, stop=-1, plot=False, plot_x_axis=0, plot_y_axis=1):
+        alg = Kmeans()
+        max_size = (alg.x_size/iterations) * (alg.y_size/iterations)
+        if points >= max_size or points == -1:
+            points = max_size
+        alg.import_data(iterations)
+        alg.main(points, clusters, max_diststop, plot, plot_x_axis, plot_y_axis)
+
+main(100, 10, .005)
