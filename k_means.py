@@ -111,7 +111,7 @@ class Kmeans:
             dist_sum = 0
             for i in range(pos_1.__len__()):
                 dist_sum += math.pow(pos_1[i] - pos_2[i], 2)
-            return math.sqrt(dist_sum)
+            return dist_sum
         else:
             return None
 
