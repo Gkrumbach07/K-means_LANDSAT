@@ -4,9 +4,9 @@ from dataGrabber import LandsatImageData
 import random
 import matplotlib.pyplot as plt
 import gdal
-from gdalconst import *
-import osr
 import numpy
+import time
+import sys
 
 
 class Point:
@@ -30,12 +30,13 @@ class Centroid:
 
 
 class Kmeans:
-    def __init__(self):
+    def __init__(self, file_indexes=[]):
         self.normalized_data = []
         self.data_points = []
         self.centroids = []
         self.x_size = None
         self.y_size = None
+        self.file_indexes = file_indexes
 
     def main(self, points_num, centroids_num, max_dist, stop=-1, plot=False, x_axis=0, y_axis=1):
         if plot:
@@ -116,19 +117,22 @@ class Kmeans:
             return None
 
     def make_points(self, num):
-        for i in range(num):  # find a way to get length of a band
+        for i in range(num):
             temp_point = Point()
             for j in range(self.normalized_data.__len__()):
                 temp_point.pos.append(self.normalized_data[j][i])
             self.data_points.append(temp_point)
 
     def import_data(self, sample):  # make min and max the same
+        index = 0
         for filename in os.listdir("landsat_tif"):
-            if filename.endswith(".tif"):
-                temp = LandsatImageData('landsat_tif\\' + filename, sample)
-                self.normalized_data.append(temp.compiled_data)
-                self.x_size = temp.band.XSize
-                self.y_size = temp.band.YSize
+            if filename.endswith(".tif") or filename.endswith(".TIF"):
+                if self.file_indexes.__contains__(index) and self.file_indexes != []:
+                    temp = LandsatImageData('landsat_tif\\' + filename, sample)
+                    self.normalized_data.append(temp.compiled_data)
+                    self.x_size = temp.band.XSize
+                    self.y_size = temp.band.YSize
+            index += 1
 
     def make_debug_data(self, num, distribute=1):
         if distribute == 1:
@@ -177,56 +181,87 @@ class Kmeans:
 
 
 class Classifier:
-        
-    def import_data(self, line):  # make min and max the same
+    def import_data(self, line):
+        index = 0
         temp = []
         for filename in os.listdir("landsat_tif"):
-            if filename.endswith(".tif"):
-                temp.append(LandsatImageData('landsat_tif\\' + filename, 0, line).compiled_data)
+            if filename.endswith(".tif") or filename.endswith(".TIF"):
+                if self.file_indexes.__contains__(index) and self.file_indexes != []:
+                    temp.append(LandsatImageData('landsat_tif\\' + filename, 0, line).compiled_data)
+            index += 1
         return temp
-
 
     def get_point_labels(self, pos):
         short_dist = 100000
         label = None
-        for i in alg.centroids:
-            temp_dist = alg.get_distance(pos, i.pos)
+        for i in self.alg.centroids:
+            temp_dist = self.alg.get_distance(pos, i.pos)
             if temp_dist < short_dist:
                 label = i.label
                 short_dist = temp_dist
         return label
 
-
     def make_point(self, index):
         point = []
-        for i in data:
+        for i in self.data:
             point.append(i[index])
         return point
-    
+
     def export_tif(self):
         format = "GTiff"
         driver = gdal.GetDriverByName(format)
-        raster = numpy.zeros((alg.y_size, alg.x_size), dtype=numpy.uint8)
-        src_ds = gdal.Open('landsat_tif/B2.TIF')
-        dst_ds = driver.CreateCopy('exportedRaster3.TIF', src_ds, 0)
+        raster = numpy.zeros((self.alg.y_size, self.alg.x_size), dtype=numpy.uint8)
+        for filename in os.listdir("landsat_tif"):
+            if filename.endswith(".tif") or filename.endswith(".TIF"):
+                src_file = filename
+                break
+        src_ds = gdal.Open('landsat_tif/' + src_file)
+        dst_ds = driver.CreateCopy(str(self.export_name) + '.tif', src_ds, 0)
 
-
-        for y in range(alg.y_size - 1):
+        for y in range(self.alg.y_size - 1):
             if y % 100 == 0:
-                print str(y) + "/" + str(alg.y_size)
-            data = import_data(y)
-            for x in range(len(data[0]) - 1):
-                raster[y][x] = get_point_labels(make_point(x))
+                sys.stdout.write("\r" + str(y) + "/" + str(self.alg.y_size) + "  " + str(round(y*100.0/self.alg.y_size, 2)) + "%")
+                sys.stdout.flush()
+            self.data = self.import_data(y)
+            for x in range(len(self.data[0]) - 1):
+                raster[y][x] = self.get_point_labels(self.make_point(x))
         dst_ds.GetRasterBand(1).WriteArray(raster)
         dst_ds = None
         src_ds = None
-        
-    def main(self, iterations, clusters, max_dist, points=-1, stop=-1, plot=False, plot_x_axis=0, plot_y_axis=1):
-        alg = Kmeans()
-        max_size = (alg.x_size/iterations) * (alg.y_size/iterations)
+
+    def stop_watch(self, value):
+        valueD = (((value / 365) / 24) / 60)
+        Days = int(valueD)
+
+        valueH = (valueD - Days) * 365
+        Hours = int(valueH)
+
+        valueM = (valueH - Hours) * 24
+        Minutes = int(valueM)
+
+        valueS = (valueM - Minutes) * 60
+        Seconds = int(valueS)
+
+        return Hours, ":", Minutes, ";", Seconds
+
+    def __init__(self, iterations, clusters, max_dist, export_name, points=-1, stop=-1, plot=False, plot_x_axis=0, plot_y_axis=1, file_indexes=[]):
+        start_time = time.time()
+        self.export_name = export_name
+        self.file_indexes = file_indexes
+        self.alg = Kmeans(file_indexes)
+        self.alg.import_data(iterations)
+        max_size = float('inf')
+        for i in range(self.alg.normalized_data.__len__()):
+            if max_size > self.alg.normalized_data[i].__len__():
+                max_size = self.alg.normalized_data[i].__len__()
         if points >= max_size or points == -1:
             points = max_size
-        alg.import_data(iterations)
-        alg.main(points, clusters, max_diststop, plot, plot_x_axis, plot_y_axis)
+        self.alg.main(points, clusters, max_dist, stop, plot, plot_x_axis, plot_y_axis)
+        self.data = None
+        self.export_tif()
+        print 'Finished in ' + str(self.stop_watch(time.time() - start_time))
 
-main(100, 10, .005)
+
+Classifier(100, 4, .005, "export1", file_indexes=[1, 2, 3])
+Classifier(100, 4, .005, "export2", file_indexes=[3, 4, 5, 6])
+Classifier(100, 4, .005, "export3", file_indexes=[4, 5, 6])
